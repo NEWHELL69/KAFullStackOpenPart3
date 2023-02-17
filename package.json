@@ -1,0 +1,28 @@
+{
+  "name": "kafullstackopenpart3",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NEWHELL69/KAFullStackOpenPart3.git"
+  },
+  "author": "kushagra",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NEWHELL69/KAFullStackOpenPart3/issues"
+  },
+  "homepage": "https://github.com/NEWHELL69/KAFullStackOpenPart3#readme",
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pug": "^3.0.2"
+  }
+}
