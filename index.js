@@ -1,16 +1,38 @@
 const express = require('express')
+const morgan = require('morgan')
+const fs = require('fs');
+
 const app = express()
 
 app.set('views', './views')
 app.set('view engine', 'pug')
 
-const fs = require('fs');
+app.use(express.json())
+app.use(morgan(function (tokens, req, res) {
+    if(tokens.method(req, res) === "POST") {
+        return [
+            tokens.method(req, res),
+            tokens.url(req, res),
+            tokens.status(req, res),
+            tokens.res(req, res, 'content-length'), '-',
+            tokens['response-time'](req, res), 'ms',
+            JSON.stringify(req.body)
+        ].join(' ');
+    }
+
+    return [
+      tokens.method(req, res),
+      tokens.url(req, res),
+      tokens.status(req, res),
+      tokens.res(req, res, 'content-length'), '-',
+      tokens['response-time'](req, res), 'ms'
+    ].join(' ')
+}))
+
 const fileName = './persons.json';
 let persons = require(fileName);
 
 const range = 1000;
-
-app.use(express.json())
 
 app.get('/api/persons', (request, response) => {
     response.json(persons)
