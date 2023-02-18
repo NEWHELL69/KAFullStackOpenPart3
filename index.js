@@ -1,12 +1,15 @@
 const express = require('express')
 const morgan = require('morgan')
 const fs = require('fs');
+const cors = require('cors');
 
 const app = express()
 
 app.set('views', './views')
 app.set('view engine', 'pug')
 
+app.use(cors());
+app.use(express.static('build'))
 app.use(express.json())
 app.use(morgan(function (tokens, req, res) {
     if(tokens.method(req, res) === "POST") {
@@ -120,7 +123,7 @@ app.post('/api/persons', (request, response) => {
 })
 
 
-const PORT = 3001
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
