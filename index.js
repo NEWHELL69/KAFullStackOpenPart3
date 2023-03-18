@@ -1,7 +1,9 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const fs = require('fs');
 const cors = require('cors');
+const mongoose = require('mongoose')
 
 const app = express()
 
@@ -37,52 +39,76 @@ let persons = require(fileName);
 
 const range = 1000;
 
+const myMongoose = require("./models/note.js")
+const Contact = myMongoose.getModel()
+
 app.get('/api/persons', (request, response) => {
-    response.json(persons)
-}) 
+    if(myMongoose.getConnectionReadyState() !== 1) {
+        response.status(503).json({
+            error: "Database not connected"
+        })
+    }
+
+    Contact.find({}).then(contacts => {
+        response.json(contacts)
+    })
+})
 
 app.get('/info', (request, response) => {
-    response.render('index', {enteriesCount: `Phonebook has info for ${persons.length} people`, currentDate: `${new Date().toString()}` })
+    if(myMongoose.getConnectionReadyState() !== 1) {
+        response.status(503).json({
+            error: "Database not connected"
+        })
+    }
+
+    Contact.countDocuments({}).then((count) => {
+        response.render('index', {enteriesCount: `Phonebook has info for ${count} people`, currentDate: `${new Date().toString()}` })
+    }).catch((e) => {
+        console.log(e)
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = persons.find((person) => {
-        return person.id === id
-    })
+    let id = request.params.id;
 
-    if(person === undefined) {
-        response.status(404).end();
-        return;
+    if(myMongoose.getConnectionReadyState() !== 1) {
+        response.status(503).json({
+            error: "Database not connected"
+        })
     }
 
-    response.json(person)
+    Contact.findById(id).then((contact) => {
+        response.json(contact)
+    }).catch((e) => {
+        console.log(e)
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    persons = persons.filter(person => person.id !== id)
-  
-    fs.writeFile(fileName, JSON.stringify(persons, null, 2), function writeJSON(err) {
-        if (err) return console.log(err);
-        console.log(JSON.stringify(persons));
-        console.log('writing to ' + fileName);
-    });
+    const id = myMongoose.convertStringIdToObjectId(request.params.id)
+
+    Contact.deleteOne(id).then((obj) => {
+        if(obj.acknowledged) {
+            console.log("Deletion successfull")
+        }
+    }).catch((e) => {
+        console.log(e)
+    })
 
     response.status(204).end()
 })
 
-const generateId = () => {
-    let id = Math.floor(Math.random() * range);
+// const generateId = () => {
+//     let id = Math.floor(Math.random() * range);
 
-    while(persons.find((person) => {
-        return person.id === id
-    }) !== undefined) {
-        id = Math.floor(Math.random() * range);
-    }
+//     while(persons.find((person) => {
+//         return person.id === id
+//     }) !== undefined) {
+//         id = Math.floor(Math.random() * range);
+//     }
 
-    return id;
-}
+//     return id;
+// }
   
 app.post('/api/persons', (request, response) => {
     const body = request.body
@@ -96,34 +122,23 @@ app.post('/api/persons', (request, response) => {
         return response.status(400).json({ 
         error: 'number missing' 
         })
-    } else if(persons.find((person) => {
-        return person.name === body.name
-    }) !== undefined) {
-        return response.status(400).json({ 
-            error: 'name must be unique' 
-        })
     }
 
-    const person = {
-        id: generateId(),
+    const contact = new Contact({
         name: body.name,
-        number: body.number
-    }
+        number: body.number    
+    })
 
-    persons = persons.concat(person);
-
-    fs.writeFile(fileName, JSON.stringify(persons, null, 2), function writeJSON(err) {
-        if (err) return console.log(err);
-        console.log(JSON.stringify(persons));
-        console.log('writing to ' + fileName);
-    });
-
-
-    response.json(person)
+    contact.save().then((newContact) => {
+        if(newContact === contact){
+            console.log(`Added ${newContact.name} number ${newContact.number} to phonebook.`);
+            response.json(newContact)
+        }    
+    })
 })
 
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })

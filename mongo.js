@@ -8,49 +8,51 @@ const mongoose = require('mongoose')
 // Name - Name of the contact
 // Number - Number of the contact
 if (process.argv.length < 3) {
-  console.log('give password as argument')
-  process.exit(1)
-}
+    console.log('give password as argument')
+    process.exit(1)
+  }
 
-const password = process.argv[2]
-const name = process.argv[3]
-const number = process.argv[4]
+main()
+async function main() {
 
-// MongoDB URL
-const url = `mongodb+srv://kushagra0304:${password}@clusterstocksheet.gifewxy.mongodb.net/?retryWrites=true&w=majority`
-mongoose.set('strictQuery',false)
+    const password = process.argv[2]
+    const name = process.argv[3]
+    const number = process.argv[4]
 
-// 
-const contactSchema = new mongoose.Schema({
-  name: String,
-  number: "number",
-})
+    // MongoDB URL
+    const url = `mongodb+srv://kushagra0304:${password}@clusterstocksheet.gifewxy.mongodb.net/?retryWrites=true&w=majority`
+    mongoose.set('strictQuery',false)
 
-const Contact = mongoose.model('Contact', contactSchema)
+    await mongoose.connect(url);
 
-const contact = new Contact({
-  name: name,
-  number: number
-})
-
-mongoose.connect(url).then(() => {
-    //Code below should work outside of this callback but it isn't working. The issue is the callback in the save 
-    // function below timeouts before mongoose can connect to the cluster.
+    const contactSchema = new mongoose.Schema({
+        name: String,
+        number: "number",
+    })
+      
+    const Contact = mongoose.model('Contact', contactSchema)
+    
+    const contact = new Contact({
+        name: name,
+        number: number
+    })
 
     if(process.argv.length === 5){
-        contact.save().then(result => {
-            console.log(`added ${name} number ${number} to phonebook`)
+        const newContact = await contact.save();
 
-            mongoose.connection.close()
-        })
+        if(newContact === contact){
+            console.log(`Added ${newContact.name} number ${newContact.number} to phonebook.`);
+        }
+
     } else if(process.argv.length === 3){
         console.log("Phonebook:")
-        Contact.find({}).then(contacts => {
-            contacts.forEach(contact => {
-                console.log(`${contact.name} ${contact.number}`);
-            });
+        const contacts = await Contact.find({});
 
-            mongoose.connection.close()
-        })
+        contacts.forEach(contact => {
+            console.log(`${contact.name} ${contact.number}`);
+        });
+
     }
-})
+
+    mongoose.connection.close()
+}
