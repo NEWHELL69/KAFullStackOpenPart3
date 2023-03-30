@@ -1,9 +1,7 @@
 require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
-const fs = require('fs');
 const cors = require('cors');
-const mongoose = require('mongoose')
 
 const app = express()
 
@@ -11,7 +9,9 @@ app.set('views', './views')
 app.set('view engine', 'pug')
 
 app.use(cors());
+
 app.use(express.static('build'))
+
 app.use(express.json())
 app.use(morgan(function (tokens, req, res) {
     if(tokens.method(req, res) === "POST") {
@@ -34,20 +34,19 @@ app.use(morgan(function (tokens, req, res) {
     ].join(' ')
 }))
 
-const fileName = './persons.json';
-let persons = require(fileName);
-
-const range = 1000;
-
 const myMongoose = require("./models/note.js")
 const Contact = myMongoose.getModel()
 
-app.get('/api/persons', (request, response) => {
+function handleDataBaseConnection(response) {
     if(myMongoose.getConnectionReadyState() !== 1) {
         response.status(503).json({
             error: "Database not connected"
         })
     }
+}
+
+app.get('/api/persons', (request, response) => {
+    handleDataBaseConnection(response)
 
     Contact.find({}).then(contacts => {
         response.json(contacts)
@@ -55,11 +54,7 @@ app.get('/api/persons', (request, response) => {
 })
 
 app.get('/info', (request, response) => {
-    if(myMongoose.getConnectionReadyState() !== 1) {
-        response.status(503).json({
-            error: "Database not connected"
-        })
-    }
+    handleDataBaseConnection(response)
 
     Contact.countDocuments({}).then((count) => {
         response.render('index', {enteriesCount: `Phonebook has info for ${count} people`, currentDate: `${new Date().toString()}` })
@@ -69,13 +64,9 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    let id = request.params.id;
+    handleDataBaseConnection(response)
 
-    if(myMongoose.getConnectionReadyState() !== 1) {
-        response.status(503).json({
-            error: "Database not connected"
-        })
-    }
+    let id = request.params.id;
 
     Contact.findById(id).then((contact) => {
         response.json(contact)
@@ -85,6 +76,8 @@ app.get('/api/persons/:id', (request, response) => {
 })
 
 app.delete('/api/persons/:id', (request, response) => {
+    handleDataBaseConnection(response)
+
     const id = myMongoose.convertStringIdToObjectId(request.params.id)
 
     Contact.deleteOne(id).then((obj) => {
@@ -98,21 +91,10 @@ app.delete('/api/persons/:id', (request, response) => {
     response.status(204).end()
 })
 
-// const generateId = () => {
-//     let id = Math.floor(Math.random() * range);
-
-//     while(persons.find((person) => {
-//         return person.id === id
-//     }) !== undefined) {
-//         id = Math.floor(Math.random() * range);
-//     }
-
-//     return id;
-// }
-  
 app.post('/api/persons', (request, response) => {
+    handleDataBaseConnection(response)
+
     const body = request.body
-    let errorMsg;
 
     if (!body.name) {
         return response.status(400).json({ 
