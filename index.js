@@ -37,25 +37,25 @@ app.use(morgan(function (tokens, req, res) {
 const myMongoose = require("./models/note.js")
 const Contact = myMongoose.getModel()
 
-function handleDataBaseConnection(response) {
+function handleDataBaseConnection(request, response, next) {
     if(myMongoose.getConnectionReadyState() !== 1) {
         response.status(503).json({
             error: "Database not connected"
         })
+    } else {
+        next();
     }
 }
 
-app.get('/api/persons', (request, response) => {
-    handleDataBaseConnection(response)
+app.use(handleDataBaseConnection)
 
+app.get('/api/persons', (request, response) => {
     Contact.find({}).then(contacts => {
         response.json(contacts)
     })
 })
 
 app.get('/info', (request, response) => {
-    handleDataBaseConnection(response)
-
     Contact.countDocuments({}).then((count) => {
         response.render('index', {enteriesCount: `Phonebook has info for ${count} people`, currentDate: `${new Date().toString()}` })
     }).catch((e) => {
@@ -64,8 +64,6 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    handleDataBaseConnection(response)
-
     let id = request.params.id;
 
     Contact.findById(id).then((contact) => {
@@ -76,8 +74,6 @@ app.get('/api/persons/:id', (request, response) => {
 })
 
 app.delete('/api/persons/:id', (request, response) => {
-    handleDataBaseConnection(response)
-
     const id = myMongoose.convertStringIdToObjectId(request.params.id)
 
     Contact.deleteOne(id).then((obj) => {
@@ -92,8 +88,6 @@ app.delete('/api/persons/:id', (request, response) => {
 })
 
 app.post('/api/persons', (request, response) => {
-    handleDataBaseConnection(response)
-
     const body = request.body
 
     if (!body.name) {
