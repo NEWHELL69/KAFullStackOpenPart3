@@ -1,15 +1,2 @@
-
 ###
-GET http://localhost:3001/api/persons HTTP/1.1
-
-###
-POST http://localhost:3001/api/persons HTTP/1.1
-content-type: application/json
-
-{
-    "name":"Kushagra Agarwal",
-    "number": "77"
-}
-
-###
-DELETE http://localhost:3001/api/persons/6411f27e6611999d95776f8a HTTP/1.1
+DELETE http://localhost:3001/api/persons/641621359afc03674f93c3 HTTP/1.1

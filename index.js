@@ -49,9 +49,11 @@ function handleDataBaseConnection(request, response, next) {
 
 app.use(handleDataBaseConnection)
 
-app.get('/api/persons', (request, response) => {
+app.get('/api/persons', (request, response, next) => {
     Contact.find({}).then(contacts => {
         response.json(contacts)
+    }).catch((e) => {
+        next(e)
     })
 })
 
@@ -59,7 +61,7 @@ app.get('/info', (request, response) => {
     Contact.countDocuments({}).then((count) => {
         response.render('index', {enteriesCount: `Phonebook has info for ${count} people`, currentDate: `${new Date().toString()}` })
     }).catch((e) => {
-        console.log(e)
+        next(e)
     })
 })
 
@@ -67,9 +69,13 @@ app.get('/api/persons/:id', (request, response) => {
     let id = request.params.id;
 
     Contact.findById(id).then((contact) => {
-        response.json(contact)
+        if(contact){
+            response.json(contact)
+        } else{
+            response.status(404).end()
+        }
     }).catch((e) => {
-        console.log(e)
+        next(e)
     })
 })
 
@@ -81,7 +87,7 @@ app.delete('/api/persons/:id', (request, response) => {
             console.log("Deletion successfull")
         }
     }).catch((e) => {
-        console.log(e)
+        next(e)
     })
 
     response.status(204).end()
@@ -110,9 +116,52 @@ app.post('/api/persons', (request, response) => {
             console.log(`Added ${newContact.name} number ${newContact.number} to phonebook.`);
             response.json(newContact)
         }    
+    }).catch((e) => {
+        next(e)
     })
 })
 
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body
+    const id = request.params.id
+
+   if(!body.number) {
+        return response.status(400).json({ 
+            error: 'number missing' 
+        })
+    }
+
+    const updationTocontact = {
+        name: body.name,
+        number: body.number    
+    }
+
+    Contact.findByIdAndUpdate(id, updationTocontact, {new: true})
+        .then((newContact) => {
+            console.log(`Added ${newContact.name} number ${newContact.number} to phonebook.`);
+            
+            response.json(newContact)
+        }).catch((e) => {
+            next(e)
+        })
+})
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error)
+
+    if (error.name === 'BSONError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    } 
+
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted obj values provided' })
+    } 
+
+    next(error)
+}
+  
+// this has to be the last loaded middleware.
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
