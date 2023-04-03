@@ -136,7 +136,7 @@ app.put('/api/persons/:id', (request, response, next) => {
         number: body.number    
     }
 
-    Contact.findByIdAndUpdate(id, updationTocontact, {new: true})
+    Contact.findByIdAndUpdate(id, updationTocontact, { new: true, runValidators: true, context: 'query' })
         .then((newContact) => {
             console.log(`Added ${newContact.name} number ${newContact.number} to phonebook.`);
             
