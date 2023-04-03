@@ -57,7 +57,7 @@ app.get('/api/persons', (request, response, next) => {
     })
 })
 
-app.get('/info', (request, response) => {
+app.get('/info', (request, response, next) => {
     Contact.countDocuments({}).then((count) => {
         response.render('index', {enteriesCount: `Phonebook has info for ${count} people`, currentDate: `${new Date().toString()}` })
     }).catch((e) => {
@@ -65,7 +65,7 @@ app.get('/info', (request, response) => {
     })
 })
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
     let id = request.params.id;
 
     Contact.findById(id).then((contact) => {
@@ -79,7 +79,7 @@ app.get('/api/persons/:id', (request, response) => {
     })
 })
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
     const id = myMongoose.convertStringIdToObjectId(request.params.id)
 
     Contact.deleteOne(id).then((obj) => {
@@ -93,7 +93,7 @@ app.delete('/api/persons/:id', (request, response) => {
     response.status(204).end()
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body
 
     if (!body.name) {
@@ -156,6 +156,10 @@ const errorHandler = (error, request, response, next) => {
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted obj values provided' })
     } 
+     
+    if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
+    }
 
     next(error)
 }
